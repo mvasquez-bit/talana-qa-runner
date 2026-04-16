@@ -1,4 +1,4 @@
-mport { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import * as fs from 'fs';
 
 // ─── Cargar credenciales desde archivo generado por el workflow ────────────
