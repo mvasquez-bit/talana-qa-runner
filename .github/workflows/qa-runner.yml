@@ -44,7 +44,7 @@ jobs:
           TALANA_PASS: ${{ secrets.TALANA_PASS }}
         run: |
           mkdir -p data
-        cat > data/credenciales.json << CREDS
+          cat > data/credenciales.json << CREDS
         {
           "baseUrl": "https://qa-asistencia.talana.dev",
           "loginPath": "/es/remuneraciones/login-vue?next=/es/remuneraciones/#/",
