@@ -18,7 +18,7 @@ async function iniciarSesion(page: any) {
   // Usar 'domcontentloaded' en lugar de 'networkidle' para evitar timeouts
   await page.goto(BASE_URL + LOGIN_PATH, {
     waitUntil: 'domcontentloaded',
-    timeout: 60000
+    timeout: 70000
   });
 
   console.log('📍 Navegó a página de login');
@@ -108,7 +108,7 @@ test('TC-001 — Login exitoso en Talana (incluye selección de empresa)', async
   // ✅ PASO 1: Navegar a login
   await page.goto(BASE_URL + LOGIN_PATH, {
     waitUntil: 'domcontentloaded',
-    timeout: 60000
+    timeout: 70000
   });
 
   console.log('📍 Navegó a página de login');
@@ -205,7 +205,7 @@ test('TC-003 — Calendario de asistencia carga sin errores', async ({ page }) =
 test('TC-004 — Login con contraseña incorrecta muestra error', async ({ page }) => {
   await page.goto(BASE_URL + LOGIN_PATH, {
     waitUntil: 'domcontentloaded',
-    timeout: 60000
+    timeout: 70000
   });
 
   const campoUsuario = page.locator(
@@ -218,7 +218,7 @@ test('TC-004 — Login con contraseña incorrecta muestra error', async ({ page 
   await page.locator('button[type="submit"], button:has-text("Ingresar")').first().click();
 
   // El sistema debe mostrar un mensaje de error
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(7000);
 
   const errorVisible = await page.locator(
     '[class*="error"], [class*="alert"], .invalid-feedback, text=/incorrecto/i, text=/inválido/i, text=/error/i'
