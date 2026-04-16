@@ -18,7 +18,7 @@ async function iniciarSesion(page: any) {
   // Usar 'domcontentloaded' en lugar de 'networkidle' para evitar timeouts
   await page.goto(BASE_URL + LOGIN_PATH, {
     waitUntil: 'domcontentloaded',
-    timeout: 30000
+    timeout: 60000
   });
 
   console.log('📍 Navegó a página de login');
