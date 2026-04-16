@@ -45,13 +45,13 @@ jobs:
         run: |
           mkdir -p data
           cat > data/credenciales.json << CREDS
-        {
+          {
           "baseUrl": "https://qa-asistencia.talana.dev",
           "loginPath": "/es/remuneraciones/login-vue?next=/es/remuneraciones/#/",
           "usuario": "${TALANA_EMAIL}",
           "clave": "${TALANA_PASS}"
-        }
-        CREDS
+          }
+          CREDS
 
       - name: Ejecutar suite — ${{ github.event.inputs.suite || 'smoke' }}
         run: npx playwright test --reporter=html,json
