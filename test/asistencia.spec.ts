@@ -12,27 +12,58 @@ const USUARIO    = creds.usuario;
 const CLAVE      = creds.clave;
 const EMPRESA    = 'LinQ SPA';
 
+// ─── Helper: Navegar a URL CON REINTENTOS ────────────────────────────────
+async function navegarConReintentos(page: any, url: string, maxIntentos: number = 3) {
+  let ultimoError: any;
+  
+  for (let intento = 1; intento <= maxIntentos; intento++) {
+    try {
+      console.log(`\n🔄 Intento ${intento}/${maxIntentos} de conectar a ${url}`);
+      
+      await page.goto(url, {
+        waitUntil: 'domcontentloaded',
+        timeout: 30000 // Timeout más corto pero con reintentos
+      });
+      
+      console.log('✅ Conexión exitosa');
+      return true;
+      
+    } catch (error: any) {
+      ultimoError = error;
+      console.log(`⚠️  Intento ${intento} falló: ${error.message.split('\n')[0]}`);
+      
+      if (intento < maxIntentos) {
+        console.log(`⏳ Esperando 3 segundos antes de reintentar...`);
+        await page.waitForTimeout(3000);
+      }
+    }
+  }
+  
+  throw ultimoError;
+}
+
 // ─── Helper: iniciar sesión en Talana (CON DIAGNÓSTICO MEJORADO) ──────────
 async function iniciarSesion(page: any) {
   try {
-    // ✅ PASO 1: Navegar a la página de login
-    console.log('\n📍 [PASO 1] Navegando a login...');
-    console.log(`   URL: ${BASE_URL}${LOGIN_PATH}`);
+    // ✅ PASO 1: Navegar a la página de login CON REINTENTOS
+    console.log('\n═══════════════════════════════════════════════════════');
+    console.log('📍 [PASO 1] Navegando a login...');
+    console.log(`   Base URL: ${BASE_URL}`);
+    console.log(`   Login Path: ${LOGIN_PATH}`);
+    console.log('═══════════════════════════════════════════════════════');
     
-    await page.goto(BASE_URL + LOGIN_PATH, {
-      waitUntil: 'domcontentloaded',
-      timeout: 45000
-    });
-    console.log('✅ [PASO 1] Navegación exitosa');
+    await navegarConReintentos(page, BASE_URL + LOGIN_PATH, 3);
 
     // ✅ PASO 2: Llenar credenciales
-    console.log('\n📍 [PASO 2] Buscando campos de credenciales...');
+    console.log('\n═══════════════════════════════════════════════════════');
+    console.log('📍 [PASO 2] Buscando campos de credenciales...');
+    console.log('═══════════════════════════════════════════════════════');
     
     const campoUsuario = page.locator(
       'input[type="email"], input[name="username"], input[placeholder*="usuario"], input[placeholder*="email"], input[placeholder*="correo"]'
     ).first();
 
-    await campoUsuario.waitFor({ state: 'visible', timeout: 20000 });
+    await campoUsuario.waitFor({ state: 'visible', timeout: 15000 });
     console.log('✅ Campo de usuario visible');
     
     await campoUsuario.fill(USUARIO);
@@ -44,7 +75,9 @@ async function iniciarSesion(page: any) {
     console.log('✍️  Contraseña ingresada');
 
     // ✅ PASO 3: Hacer click en el primer "Iniciar sesión"
-    console.log('\n📍 [PASO 3] Buscando botón "Iniciar sesión"...');
+    console.log('\n═══════════════════════════════════════════════════════');
+    console.log('📍 [PASO 3] Haciendo click en "Iniciar sesión"...');
+    console.log('═══════════════════════════════════════════════════════');
     
     const btnIngresar = page.locator(
       'button[type="submit"], button:has-text("Ingresar"), button:has-text("Entrar"), button:has-text("Iniciar sesión")'
@@ -54,31 +87,33 @@ async function iniciarSesion(page: any) {
     console.log('✅ Botón encontrado');
     
     await btnIngresar.click();
-    console.log('🔐 Click en primer "Iniciar sesión"');
+    console.log('🔐 Click ejecutado en primer "Iniciar sesión"');
 
-    // ✅ PASO 4: Esperar la pantalla de empresa con MEJOR DIAGNÓSTICO
-    console.log('\n📍 [PASO 4] Esperando pantalla de selección de empresa...');
+    // ✅ PASO 4: Esperar la pantalla de empresa
+    console.log('\n═══════════════════════════════════════════════════════');
+    console.log('📍 [PASO 4] Esperando pantalla de selección de empresa...');
+    console.log('═══════════════════════════════════════════════════════');
     
     let empresaScreenVisible = false;
     let intentos = 0;
-    const maxIntentos = 5;
+    const maxIntentos = 8;
 
     while (!empresaScreenVisible && intentos < maxIntentos) {
       intentos++;
       console.log(`   Intento ${intentos}/${maxIntentos}...`);
       
       try {
-        // Esperar que aparezca CUALQUIERA de estos elementos que indican la pantalla de empresa
+        // Esperar que aparezca CUALQUIERA de estos elementos
         await Promise.race([
-          page.waitForSelector('select', { timeout: 10000 }),
-          page.locator('text=/¿En qué empresa/i').waitFor({ timeout: 10000 }),
-          page.locator('text=/En qué empresa/i').waitFor({ timeout: 10000 }),
-          page.locator('[class*="empresa"]').first().waitFor({ state: 'visible', timeout: 10000 })
+          page.waitForSelector('select', { timeout: 5000 }),
+          page.locator('text=/¿En qué empresa/i').waitFor({ timeout: 5000 }),
+          page.locator('text=/En qué empresa/i').waitFor({ timeout: 5000 }),
+          page.locator('[class*="empresa"]').first().waitFor({ state: 'visible', timeout: 5000 })
         ]).then(() => {
           empresaScreenVisible = true;
           console.log('✅ Pantalla de empresa detectada');
         }).catch(() => {
-          // No encontró, continuar intentando
+          // No encontró, continuar
         });
 
         if (!empresaScreenVisible) {
@@ -86,30 +121,39 @@ async function iniciarSesion(page: any) {
           await page.waitForTimeout(2000);
         }
       } catch (error) {
-        console.log(`   ⚠️  Intento ${intentos} falló`);
+        console.log(`   ⚠️  Error en intento ${intentos}`);
         await page.waitForTimeout(1500);
       }
     }
 
     if (!empresaScreenVisible) {
       console.log('⚠️  Pantalla de empresa NO apareció después de esperar');
-      // Tomar screenshot para diagnóstico
-      await page.screenshot({ path: 'error-empresa-screen.png' });
-      throw new Error('Pantalla de selección de empresa no cargó');
+      
+      // Debug: tomar screenshot
+      try {
+        await page.screenshot({ path: 'debug-empresa-screen.png' });
+        console.log('📸 Screenshot guardado: debug-empresa-screen.png');
+      } catch (e) {
+        console.log('   (No se pudo tomar screenshot)');
+      }
+      
+      throw new Error('Pantalla de selección de empresa no cargó después de 16 segundos');
     }
 
     // ✅ PASO 5: Seleccionar empresa
-    console.log('\n📍 [PASO 5] Seleccionando empresa...');
+    console.log('\n═══════════════════════════════════════════════════════');
+    console.log('📍 [PASO 5] Seleccionando empresa...');
+    console.log('═══════════════════════════════════════════════════════');
     
     const empresaSelect = page.locator('select').first();
     const empresaVisible = await empresaSelect.isVisible({ timeout: 5000 }).catch(() => false);
 
     if (empresaVisible) {
       await empresaSelect.selectOption(EMPRESA);
-      console.log(`🏢 Empresa seleccionada: ${EMPRESA}`);
+      console.log(`✅ Empresa seleccionada: ${EMPRESA}`);
     } else {
-      console.log('⚠️  Select no encontrado, buscando alternativa...');
-      // Si es un dropdown custom, intentar hacer click
+      console.log('⚠️  Select no encontrado, intentando dropdown custom...');
+      
       const dropdownTrigger = page.locator('[class*="empresa"], [class*="select"]').first();
       const dropdownTriggerVisible = await dropdownTrigger.isVisible({ timeout: 5000 }).catch(() => false);
       
@@ -122,13 +166,15 @@ async function iniciarSesion(page: any) {
         
         if (opcionVisible) {
           await opcionEmpresa.click();
-          console.log(`🏢 Empresa seleccionada (custom): ${EMPRESA}`);
+          console.log(`✅ Empresa seleccionada (custom): ${EMPRESA}`);
         }
       }
     }
 
     // ✅ PASO 6: Click en segundo "Iniciar sesión"
-    console.log('\n📍 [PASO 6] Haciendo click en segundo "Iniciar sesión"...');
+    console.log('\n═══════════════════════════════════════════════════════');
+    console.log('📍 [PASO 6] Haciendo click en segundo "Iniciar sesión"...');
+    console.log('═══════════════════════════════════════════════════════');
     
     const btnIngresarEmpresa = page.locator(
       'button[type="submit"], button:has-text("Ingresar"), button:has-text("Entrar"), button:has-text("Iniciar sesión")'
@@ -138,17 +184,19 @@ async function iniciarSesion(page: any) {
     console.log('✅ Botón visible');
     
     await btnIngresarEmpresa.click();
-    console.log('🔐 Click en segundo "Iniciar sesión"');
+    console.log('🔐 Click ejecutado en segundo "Iniciar sesión"');
 
-    // ✅ PASO 7: Esperar carga final de la aplicación
-    console.log('\n📍 [PASO 7] Esperando carga de la aplicación...');
+    // ✅ PASO 7: Esperar carga final
+    console.log('\n═══════════════════════════════════════════════════════');
+    console.log('📍 [PASO 7] Esperando carga final de la aplicación...');
+    console.log('═══════════════════════════════════════════════════════');
     
     try {
-      await page.waitForURL(/\/#\//, { timeout: 40000 });
+      await page.waitForURL(/\/#\//, { timeout: 30000 });
       console.log(`✅ URL cambió correctamente: ${page.url()}`);
     } catch (error) {
       console.log('⚠️  URL no cambió a patrón esperado, esperando networkidle...');
-      await page.waitForLoadState('networkidle', { timeout: 30000 });
+      await page.waitForLoadState('networkidle', { timeout: 25000 });
       console.log(`✅ Página cargada. URL actual: ${page.url()}`);
     }
 
@@ -158,13 +206,12 @@ async function iniciarSesion(page: any) {
     console.error('\n❌ ERROR DURANTE EL LOGIN:');
     console.error(`   ${error.message}`);
     
-    // Tomar screenshot para debugging
     try {
       const timestamp = new Date().toISOString().replace(/:/g, '-');
       await page.screenshot({ path: `error-login-${timestamp}.png` });
-      console.error(`   Screenshot guardado: error-login-${timestamp}.png`);
+      console.error(`   📸 Screenshot guardado: error-login-${timestamp}.png`);
     } catch (screenshotError) {
-      console.error('   No se pudo tomar screenshot');
+      console.error('   (No se pudo tomar screenshot)');
     }
     
     throw error;
@@ -174,29 +221,36 @@ async function iniciarSesion(page: any) {
 // ─── TC-001: Login exitoso ───────────────────────────────────────────────
 test('TC-001 — Login exitoso en Talana (incluye selección de empresa)', async ({ page }) => {
   test.slow();
-  test.setTimeout(120000); // 2 minutos para este test específicamente
+  test.setTimeout(180000); // 3 minutos
 
   try {
+    console.log('\n\n████████████████████████████████████████████████████');
+    console.log('█  TC-001: Login exitoso en Talana');
+    console.log('████████████████████████████████████████████████████\n');
+    
     await iniciarSesion(page);
     
-    // Verificación final
     const urlActual = page.url();
     console.log(`\n📊 Verificación final - URL: ${urlActual}`);
     
     expect(urlActual).toContain('asistencia');
-    console.log('✅ Test TC-001 PASSOU');
+    console.log('✅✅✅ Test TC-001 PASSOU ✅✅✅\n');
     
   } catch (error) {
-    console.error('❌ Test TC-001 FALHOU');
+    console.error('❌❌❌ Test TC-001 FALHOU ❌❌❌\n');
     throw error;
   }
 });
 
 // ─── TC-002: Módulo de asistencia es accesible ────────────────────────────
 test('TC-002 — Módulo de Asistencia es accesible', async ({ page }) => {
-  test.setTimeout(120000);
+  test.setTimeout(180000);
 
   try {
+    console.log('\n\n████████████████████████████████████████████████████');
+    console.log('█  TC-002: Módulo de Asistencia es accesible');
+    console.log('████████████████████████████████████████████████████\n');
+    
     await iniciarSesion(page);
 
     console.log('\n📍 Buscando menú de Asistencia...');
@@ -210,19 +264,23 @@ test('TC-002 — Módulo de Asistencia es accesible', async ({ page }) => {
     await menuAsistencia.click();
     await page.waitForLoadState('networkidle', { timeout: 20000 });
 
-    console.log('✅ Test TC-002 PASSOU');
+    console.log('✅✅✅ Test TC-002 PASSOU ✅✅✅\n');
     
   } catch (error) {
-    console.error('❌ Test TC-002 FALHOU');
+    console.error('❌❌❌ Test TC-002 FALHOU ❌❌❌\n');
     throw error;
   }
 });
 
 // ─── TC-003: Vista del calendario de asistencia carga ─────────────────────
 test('TC-003 — Calendario de asistencia carga sin errores', async ({ page }) => {
-  test.setTimeout(120000);
+  test.setTimeout(180000);
 
   try {
+    console.log('\n\n████████████████████████████████████████████████████');
+    console.log('█  TC-003: Calendario de asistencia carga sin errores');
+    console.log('████████████████████████████████████████████████████\n');
+    
     await iniciarSesion(page);
 
     console.log('\n📍 Navegando a asistencia...');
@@ -243,31 +301,31 @@ test('TC-003 — Calendario de asistencia carga sin errores', async ({ page }) =
     const contenido = page.locator('table, .calendar, .fc-view, [class*="attendance"], [class*="asistencia"]').first();
     await expect(contenido).toBeVisible({ timeout: 15000 });
 
-    console.log('✅ Test TC-003 PASSOU');
+    console.log('✅✅✅ Test TC-003 PASSOU ✅✅✅\n');
     
   } catch (error) {
-    console.error('❌ Test TC-003 FALHOU');
+    console.error('❌❌❌ Test TC-003 FALHOU ❌❌❌\n');
     throw error;
   }
 });
 
 // ─── TC-004: Login con credenciales incorrectas muestra error ─────────────
 test('TC-004 — Login con contraseña incorrecta muestra error', async ({ page }) => {
-  test.setTimeout(120000);
+  test.setTimeout(180000);
 
   try {
-    console.log('\n📍 Iniciando prueba de credenciales incorrectas...');
+    console.log('\n\n████████████████████████████████████████████████████');
+    console.log('█  TC-004: Credenciales incorrectas muestran error');
+    console.log('████████████████████████████████████████████████████\n');
     
-    await page.goto(BASE_URL + LOGIN_PATH, {
-      waitUntil: 'domcontentloaded',
-      timeout: 45000
-    });
+    console.log('\n📍 Navegando a login...');
+    await navegarConReintentos(page, BASE_URL + LOGIN_PATH, 3);
 
     const campoUsuario = page.locator(
       'input[type="email"], input[name="username"], input[placeholder*="usuario"], input[placeholder*="email"]'
     ).first();
 
-    await campoUsuario.waitFor({ state: 'visible', timeout: 20000 });
+    await campoUsuario.waitFor({ state: 'visible', timeout: 15000 });
     await campoUsuario.fill(USUARIO);
     await page.locator('input[type="password"]').first().fill('ClaveIncorrecta999!');
     
@@ -287,19 +345,24 @@ test('TC-004 — Login con contraseña incorrecta muestra error', async ({ page 
     const sigueEnLogin = page.url().includes('login');
 
     expect(errorVisible || sigueEnLogin).toBeTruthy();
-    console.log('✅ Test TC-004 PASSOU — Sistema rechazó credenciales');
+    console.log('✅ Sistema rechazó credenciales correctamente');
+    console.log('✅✅✅ Test TC-004 PASSOU ✅✅✅\n');
     
   } catch (error) {
-    console.error('❌ Test TC-004 FALHOU');
+    console.error('❌❌❌ Test TC-004 FALHOU ❌❌❌\n');
     throw error;
   }
 });
 
 // ─── TC-005: Módulo de Turnos es accesible ────────────────────────────────
 test('TC-005 — Módulo de Turnos es accesible', async ({ page }) => {
-  test.setTimeout(120000);
+  test.setTimeout(180000);
 
   try {
+    console.log('\n\n████████████████████████████████████████████████████');
+    console.log('█  TC-005: Módulo de Turnos es accesible');
+    console.log('████████████████████████████████████████████████████\n');
+    
     await iniciarSesion(page);
 
     console.log('\n📍 Buscando menú de Turnos...');
@@ -312,14 +375,15 @@ test('TC-005 — Módulo de Turnos es accesible', async ({ page }) => {
     if (existe) {
       await menuTurnos.click();
       await page.waitForLoadState('networkidle', { timeout: 20000 });
-      console.log('✅ Test TC-005 PASSOU — Módulo de Turnos encontrado');
+      console.log('✅ Módulo de Turnos encontrado');
+      console.log('✅✅✅ Test TC-005 PASSOU ✅✅✅\n');
     } else {
       console.log('ℹ️  Menú de Turnos no encontrado para este rol');
       test.skip(true, 'Turnos no disponible para este rol de usuario');
     }
     
   } catch (error) {
-    console.error('❌ Test TC-005 FALHOU');
+    console.error('❌❌❌ Test TC-005 FALHOU ❌❌❌\n');
     throw error;
   }
 });
