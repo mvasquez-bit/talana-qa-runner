@@ -11,7 +11,6 @@ const BASE_URL   = 'https://talana.com';
 const LOGIN_PATH = '/es/remuneraciones/login-vue?next=/es/remuneraciones/#/';
 const USUARIO    = creds.usuario;
 const CLAVE      = creds.clave;
-const EMPRESA    = 'LinQ SPA';
  
 // ─── Helper: Navegar a URL CON REINTENTOS ─────────────────────────────────
 async function navegarConReintentos(page: any, url: string, maxIntentos: number = 3) {
@@ -55,7 +54,7 @@ async function iniciarSesion(page: any) {
     
     await navegarConReintentos(page, BASE_URL + LOGIN_PATH, 3);
  
-    // ✅ PASO 2: Llenar credenciales con SELECTORES CORRECTOS
+    // ✅ PASO 2: Llenar credenciales
     console.log('\n═══════════════════════════════════════════════════════');
     console.log('📍 [PASO 2] Buscando campos de credenciales...');
     console.log('═══════════════════════════════════════════════════════');
@@ -69,13 +68,13 @@ async function iniciarSesion(page: any) {
     await campoUsuario.fill(USUARIO);
     console.log(`✍️  Usuario ingresado: ${USUARIO}`);
  
-    // ✅ Campo contraseña - buscar por tipo y atributos
+    // ✅ Campo contraseña
     const campoPass = page.locator('input[type="password"]').first();
     await campoPass.waitFor({ state: 'visible', timeout: 15000 });
     await campoPass.fill(CLAVE);
     console.log('✍️  Contraseña ingresada');
  
-    // ✅ PASO 3: Hacer click en el primer "Iniciar sesión"
+    // ✅ PASO 3: Hacer click en "Iniciar sesión"
     console.log('\n═══════════════════════════════════════════════════════');
     console.log('📍 [PASO 3] Haciendo click en "Iniciar sesión"...');
     console.log('═══════════════════════════════════════════════════════');
@@ -88,104 +87,35 @@ async function iniciarSesion(page: any) {
     console.log('✅ Botón encontrado');
     
     await btnIngresar.click();
-    console.log('🔐 Click ejecutado en primer "Iniciar sesión"');
+    console.log('🔐 Click ejecutado en "Iniciar sesión"');
  
-    // ✅ PASO 4: Esperar la pantalla de empresa
+    // ✅ PASO 4: NUEVO - Esperar el botón "Inicia sesión" final (con empresa ya seleccionada)
     console.log('\n═══════════════════════════════════════════════════════');
-    console.log('📍 [PASO 4] Esperando pantalla de selección de empresa...');
+    console.log('📍 [PASO 4] Esperando pantalla de empresa...');
     console.log('═══════════════════════════════════════════════════════');
     
-    let empresaScreenVisible = false;
-    let intentos = 0;
-    const maxIntentos = 8;
+    // Esperar a que aparezca el div con "LinQ SPA" o cualquier empresa
+    await page.locator('div.list__tile__title').waitFor({ state: 'visible', timeout: 15000 });
+    console.log('✅ Pantalla de empresa cargada (empresa preseleccionada)');
  
-    while (!empresaScreenVisible && intentos < maxIntentos) {
-      intentos++;
-      console.log(`   Intento ${intentos}/${maxIntentos}...`);
-      
-      try {
-        await Promise.race([
-          page.waitForSelector('select', { timeout: 5000 }),
-          page.locator('text=/¿En qué empresa/i').waitFor({ timeout: 5000 }),
-          page.locator('text=/En qué empresa/i').waitFor({ timeout: 5000 }),
-          page.locator('[class*="empresa"]').first().waitFor({ state: 'visible', timeout: 5000 })
-        ]).then(() => {
-          empresaScreenVisible = true;
-          console.log('✅ Pantalla de empresa detectada');
-        }).catch(() => {});
- 
-        if (!empresaScreenVisible) {
-          console.log(`   ⏳ No visible aún, esperando 2 segundos...`);
-          await page.waitForTimeout(2000);
-        }
-      } catch (error) {
-        console.log(`   ⚠️  Error en intento ${intentos}`);
-        await page.waitForTimeout(1500);
-      }
-    }
- 
-    if (!empresaScreenVisible) {
-      console.log('⚠️  Pantalla de empresa NO apareció después de esperar');
-      
-      try {
-        await page.screenshot({ path: 'debug-empresa-screen.png' });
-        console.log('📸 Screenshot guardado: debug-empresa-screen.png');
-      } catch (e) {
-        console.log('   (No se pudo tomar screenshot)');
-      }
-      
-      throw new Error('Pantalla de selección de empresa no cargó después de 16 segundos');
-    }
- 
-    // ✅ PASO 5: Seleccionar empresa
+    // ✅ PASO 5: Click en el botón "Inicia sesión" final (la empresa ya está seleccionada)
     console.log('\n═══════════════════════════════════════════════════════');
-    console.log('📍 [PASO 5] Seleccionando empresa...');
+    console.log('📍 [PASO 5] Haciendo click en botón final "Inicia sesión"...');
     console.log('═══════════════════════════════════════════════════════');
     
-    const empresaSelect = page.locator('select').first();
-    const empresaVisible = await empresaSelect.isVisible({ timeout: 5000 }).catch(() => false);
- 
-    if (empresaVisible) {
-      await empresaSelect.selectOption(EMPRESA);
-      console.log(`✅ Empresa seleccionada: ${EMPRESA}`);
-    } else {
-      console.log('⚠️  Select no encontrado, intentando dropdown custom...');
-      
-      const dropdownTrigger = page.locator('[class*="empresa"], [class*="select"]').first();
-      const dropdownTriggerVisible = await dropdownTrigger.isVisible({ timeout: 5000 }).catch(() => false);
-      
-      if (dropdownTriggerVisible) {
-        await dropdownTrigger.click();
-        await page.waitForTimeout(1000);
-        
-        const opcionEmpresa = page.locator(`text="${EMPRESA}"`).first();
-        const opcionVisible = await opcionEmpresa.isVisible({ timeout: 5000 }).catch(() => false);
-        
-        if (opcionVisible) {
-          await opcionEmpresa.click();
-          console.log(`✅ Empresa seleccionada (custom): ${EMPRESA}`);
-        }
-      }
-    }
- 
-    // ✅ PASO 6: Click en segundo "Iniciar sesión"
-    console.log('\n═══════════════════════════════════════════════════════');
-    console.log('📍 [PASO 6] Haciendo click en segundo "Iniciar sesión"...');
-    console.log('═══════════════════════════════════════════════════════');
-    
-    const btnIngresarEmpresa = page.locator(
-      'button[type="submit"], button:has-text("Ingresar"), button:has-text("Entrar"), button:has-text("Iniciar sesión")'
+    const btnIngresarFinal = page.locator(
+      'button:has-text("Inicia sesión"), button[type="submit"]'
     ).last();
  
-    await btnIngresarEmpresa.waitFor({ state: 'visible', timeout: 15000 });
-    console.log('✅ Botón visible');
+    await btnIngresarFinal.waitFor({ state: 'visible', timeout: 15000 });
+    console.log('✅ Botón final visible');
     
-    await btnIngresarEmpresa.click();
-    console.log('🔐 Click ejecutado en segundo "Iniciar sesión"');
+    await btnIngresarFinal.click();
+    console.log('🔐 Click ejecutado en botón final');
  
-    // ✅ PASO 7: Esperar carga final
+    // ✅ PASO 6: Esperar carga final
     console.log('\n═══════════════════════════════════════════════════════');
-    console.log('📍 [PASO 7] Esperando carga final de la aplicación...');
+    console.log('📍 [PASO 6] Esperando carga final de la aplicación...');
     console.log('═══════════════════════════════════════════════════════');
     
     try {
