@@ -6,14 +6,14 @@ const creds = JSON.parse(
   fs.readFileSync('data/credenciales.json', 'utf-8')
 );
  
-// ✅ ACTUALIZADO: Usar URL de producción en lugar de QA
+// ✅ URL de producción
 const BASE_URL   = 'https://talana.com';
 const LOGIN_PATH = '/es/remuneraciones/login-vue?next=/es/remuneraciones/#/';
 const USUARIO    = creds.usuario;
 const CLAVE      = creds.clave;
 const EMPRESA    = 'LinQ SPA';
  
-// ─── Helper: Navegar a URL CON REINTENTOS Y MEJOR MANEJO DE RED ───────────
+// ─── Helper: Navegar a URL CON REINTENTOS ─────────────────────────────────
 async function navegarConReintentos(page: any, url: string, maxIntentos: number = 3) {
   let ultimoError: any;
   
@@ -21,10 +21,9 @@ async function navegarConReintentos(page: any, url: string, maxIntentos: number 
     try {
       console.log(`\n🔄 Intento ${intento}/${maxIntentos} de conectar a ${url}`);
       
-      // Usar 'load' en lugar de 'domcontentloaded' para producción
       await page.goto(url, {
         waitUntil: 'load',
-        timeout: 60000 // 60 segundos por intento (más tiempo para producción)
+        timeout: 60000
       });
       
       console.log('✅ Conexión exitosa');
@@ -56,21 +55,21 @@ async function iniciarSesion(page: any) {
     
     await navegarConReintentos(page, BASE_URL + LOGIN_PATH, 3);
  
-    // ✅ PASO 2: Llenar credenciales
+    // ✅ PASO 2: Llenar credenciales con SELECTORES CORRECTOS
     console.log('\n═══════════════════════════════════════════════════════');
     console.log('📍 [PASO 2] Buscando campos de credenciales...');
     console.log('═══════════════════════════════════════════════════════');
     
-    const campoUsuario = page.locator(
-      'input[type="email"], input[name="username"], input[placeholder*="usuario"], input[placeholder*="email"], input[placeholder*="correo"]'
-    ).first();
- 
-    await campoUsuario.waitFor({ state: 'visible', timeout: 15000 });
+    // ✅ Campo de usuario - usar data-cy específico
+    const campoUsuario = page.locator('[data-cy="talana-user-input"]');
+    
+    await campoUsuario.waitFor({ state: 'visible', timeout: 20000 });
     console.log('✅ Campo de usuario visible');
     
     await campoUsuario.fill(USUARIO);
     console.log(`✍️  Usuario ingresado: ${USUARIO}`);
  
+    // ✅ Campo contraseña - buscar por tipo y atributos
     const campoPass = page.locator('input[type="password"]').first();
     await campoPass.waitFor({ state: 'visible', timeout: 15000 });
     await campoPass.fill(CLAVE);
@@ -113,9 +112,7 @@ async function iniciarSesion(page: any) {
         ]).then(() => {
           empresaScreenVisible = true;
           console.log('✅ Pantalla de empresa detectada');
-        }).catch(() => {
-          // No encontró, continuar
-        });
+        }).catch(() => {});
  
         if (!empresaScreenVisible) {
           console.log(`   ⏳ No visible aún, esperando 2 segundos...`);
@@ -221,7 +218,7 @@ async function iniciarSesion(page: any) {
 // ─── TC-001: Login exitoso ───────────────────────────────────────────────
 test('TC-001 — Login exitoso en Talana (incluye selección de empresa)', async ({ page }) => {
   test.slow();
-  test.setTimeout(240000); // 4 minutos para producción
+  test.setTimeout(240000);
  
   try {
     console.log('\n\n████████████████████████████████████████████████████');
@@ -321,12 +318,12 @@ test('TC-004 — Login con contraseña incorrecta muestra error', async ({ page 
     console.log('\n📍 Navegando a login...');
     await navegarConReintentos(page, BASE_URL + LOGIN_PATH, 3);
  
-    const campoUsuario = page.locator(
-      'input[type="email"], input[name="username"], input[placeholder*="usuario"], input[placeholder*="email"]'
-    ).first();
- 
-    await campoUsuario.waitFor({ state: 'visible', timeout: 15000 });
+    // ✅ Campo usuario - con selector correcto
+    const campoUsuario = page.locator('[data-cy="talana-user-input"]');
+    await campoUsuario.waitFor({ state: 'visible', timeout: 20000 });
     await campoUsuario.fill(USUARIO);
+    
+    // ✅ Campo password
     await page.locator('input[type="password"]').first().fill('ClaveIncorrecta999!');
     
     const btnIngresar = page.locator(
