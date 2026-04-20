@@ -89,35 +89,54 @@ async function iniciarSesion(page: any) {
     await btnIngresar.click();
     console.log('🔐 Click ejecutado en "Iniciar sesión"');
  
-    // ✅ PASO 4: Esperar a que la pantalla de empresa cargue (con delay para asegurar)
+    // ✅ PASO 4: Esperar a que la pantalla de empresa cargue
     console.log('\n═══════════════════════════════════════════════════════');
     console.log('📍 [PASO 4] Esperando pantalla de empresa...');
     console.log('═══════════════════════════════════════════════════════');
     
-    // Esperar 2 segundos para que cargue la pantalla de empresa
-    await page.waitForTimeout(2000);
-    console.log('⏳ Esperado a que cargue la pantalla de empresa...');
+    // Esperar a que aparezca el botón de "Inicia sesión" (que aparece en la pantalla de empresa)
+    // Esperamos a que haya MÁS DE UN botón en la página (el primero + el de empresa)
+    let buttonCount = 0;
+    let intentos = 0;
+    const maxIntentos = 10;
+    
+    while (buttonCount < 2 && intentos < maxIntentos) {
+      intentos++;
+      await page.waitForTimeout(500);
+      
+      const allButtons = page.locator('button[type="submit"], button:has-text("Iniciar sesión"), button:has-text("Inicia sesión")');
+      buttonCount = await allButtons.count();
+      console.log(`   Intento ${intentos}: ${buttonCount} botones encontrados`);
+      
+      if (buttonCount >= 2) {
+        console.log('✅ Pantalla de empresa cargada (2 o más botones detectados)');
+        break;
+      }
+    }
  
-    // ✅ PASO 5: Click en el botón "Inicia sesión" final (la empresa ya está seleccionada)
+    if (buttonCount < 2) {
+      console.log('⚠️  Solo se encontró 1 botón, asumiendo que la página está lista');
+      await page.waitForTimeout(1000);
+    }
+ 
+    // ✅ PASO 5: Click en el botón "Inicia sesión" final
     console.log('\n═══════════════════════════════════════════════════════');
-    console.log('📍 [PASO 5] Haciendo click en botón final "Inicia sesión"...');
+    console.log('📍 [PASO 5] Haciendo click en botón final...');
     console.log('═══════════════════════════════════════════════════════');
     
-    // Buscar todos los botones que contengan "Inicia sesión" o "Iniciar sesión"
-    const botonesFinal = page.locator(
-      'button:has-text("Inicia sesión"), button:has-text("Iniciar sesión"), button[type="submit"]'
-    );
+    // Buscar TODOS los botones y hacer click en el ÚLTIMO visible
+    const todosBotones = page.locator('button');
+    const totalBotones = await todosBotones.count();
+    console.log(`   Total de botones en la página: ${totalBotones}`);
     
-    // Contar cuántos botones hay
-    const count = await botonesFinal.count();
-    console.log(`   Encontrados ${count} botones de sesión`);
+    // Hacer click en el ÚLTIMO botón (debería ser el de empresa)
+    const ultimoBoton = todosBotones.last();
+    await ultimoBoton.waitFor({ state: 'visible', timeout: 10000 });
     
-    // Hacer click en el ÚLTIMO (que es el de la pantalla de empresa)
-    const btnIngresarFinal = botonesFinal.last();
-    await btnIngresarFinal.waitFor({ state: 'visible', timeout: 10000 });
-    console.log('✅ Botón final visible');
+    const textoBoton = await ultimoBoton.textContent();
+    console.log(`✅ Botón final encontrado: "${textoBoton}"`);
     
-    await btnIngresarFinal.click();
+    await ultimoBoton.click();
     console.log('🔐 Click ejecutado en botón final');
  
     // ✅ PASO 6: Esperar carga final
