@@ -89,25 +89,32 @@ async function iniciarSesion(page: any) {
     await btnIngresar.click();
     console.log('🔐 Click ejecutado en "Iniciar sesión"');
  
-    // ✅ PASO 4: NUEVO - Esperar el botón "Inicia sesión" final (con empresa ya seleccionada)
+    // ✅ PASO 4: Esperar a que la pantalla de empresa cargue (con delay para asegurar)
     console.log('\n═══════════════════════════════════════════════════════');
     console.log('📍 [PASO 4] Esperando pantalla de empresa...');
     console.log('═══════════════════════════════════════════════════════');
     
-    // Esperar a que aparezca el div con "LinQ SPA" o cualquier empresa
-    await page.locator('div.list__tile__title').waitFor({ state: 'visible', timeout: 15000 });
-    console.log('✅ Pantalla de empresa cargada (empresa preseleccionada)');
+    // Esperar 2 segundos para que cargue la pantalla de empresa
+    await page.waitForTimeout(2000);
+    console.log('⏳ Esperado a que cargue la pantalla de empresa...');
  
     // ✅ PASO 5: Click en el botón "Inicia sesión" final (la empresa ya está seleccionada)
     console.log('\n═══════════════════════════════════════════════════════');
     console.log('📍 [PASO 5] Haciendo click en botón final "Inicia sesión"...');
     console.log('═══════════════════════════════════════════════════════');
     
-    const btnIngresarFinal = page.locator(
-      'button:has-text("Inicia sesión"), button[type="submit"]'
-    ).last();
- 
-    await btnIngresarFinal.waitFor({ state: 'visible', timeout: 15000 });
+    // Buscar todos los botones que contengan "Inicia sesión" o "Iniciar sesión"
+    const botonesFinal = page.locator(
+      'button:has-text("Inicia sesión"), button:has-text("Iniciar sesión"), button[type="submit"]'
+    );
+    
+    // Contar cuántos botones hay
+    const count = await botonesFinal.count();
+    console.log(`   Encontrados ${count} botones de sesión`);
+    
+    // Hacer click en el ÚLTIMO (que es el de la pantalla de empresa)
+    const btnIngresarFinal = botonesFinal.last();
+    await btnIngresarFinal.waitFor({ state: 'visible', timeout: 10000 });
     console.log('✅ Botón final visible');
     
     await btnIngresarFinal.click();
