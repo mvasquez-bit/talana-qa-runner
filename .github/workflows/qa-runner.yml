@@ -1,5 +1,5 @@
 name: Talana QA — Asistencia y Turnos
-
+ 
 on:
   workflow_dispatch:
     inputs:
@@ -16,28 +16,28 @@ on:
   push:
     paths:
       - 'tests/**'
-
+ 
 jobs:
   qa-tests:
     name: Ejecutar pruebas de Talana
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
+ 
     steps:
       - name: Descargar código del repositorio
         uses: actions/checkout@v4
-
+ 
       - name: Instalar Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
+ 
       - name: Instalar dependencias
         run: |
           npm init -y
           npm install -D @playwright/test
           npx playwright install chromium --with-deps
-
+ 
       - name: Crear archivo de configuración con credenciales
         env:
           TALANA_EMAIL: ${{ secrets.TALANA_EMAIL }}
@@ -52,12 +52,12 @@ jobs:
           "clave": "${TALANA_PASS}"
           }
           CREDS
-
+ 
       - name: Ejecutar suite — ${{ github.event.inputs.suite || 'smoke' }}
         run: npx playwright test --reporter=html,json
         env:
           SUITE: ${{ github.event.inputs.suite || 'smoke' }}
-
+ 
       - name: Subir evidencias (videos, fotos, logs)
         if: always()
         uses: actions/upload-artifact@v4
@@ -67,7 +67,7 @@ jobs:
             test-results/
             playwright-report/
           retention-days: 30
-
+ 
       - name: Notificar resultado a Slack
         if: always()
         env:
@@ -75,7 +75,7 @@ jobs:
         run: |
           STATUS="${{ job.status }}"
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
+ 
           if [ "$STATUS" = "success" ]; then
             COLOR="good"
             ICON=":white_check_mark:"
@@ -85,8 +85,8 @@ jobs:
             ICON=":x:"
             TEXTO="Una o más pruebas fallaron — revisar evidencias"
           fi
-
-          curl -s -X POST "$SLACK_WEBHOOK" \
+ 
+          curl -X POST "$SLACK_WEBHOOK" \
             -H 'Content-type: application/json' \
             -d "{
               \"attachments\": [{
