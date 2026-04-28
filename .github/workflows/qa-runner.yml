@@ -68,25 +68,43 @@ jobs:
             playwright-report/
           retention-days: 30
  
-      - name: Notificar resultado a Slack
+      - name: Procesar resultados y enviar a Slack
         if: always()
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         run: |
+          # Leer el archivo de resultados JSON
+          if [ -f "test-results/results.json" ]; then
+            RESULTS=$(cat test-results/results.json)
+            
+            # Extraer información de las pruebas
+            TOTAL_TESTS=$(echo "$RESULTS" | grep -o '"title"' | wc -l)
+            PASSED=$(echo "$RESULTS" | grep -o '"status":"passed"' | wc -l)
+            FAILED=$(echo "$RESULTS" | grep -o '"status":"failed"' | wc -l)
+            
+            # Extraer nombres de las pruebas
+            TEST_NAMES=$(echo "$RESULTS" | grep -o '"title":"[^"]*"' | sed 's/"title":"\(.*\)"/\1/' | head -5)
+          else
+            TOTAL_TESTS="0"
+            PASSED="0"
+            FAILED="0"
+            TEST_NAMES="No tests found"
+          fi
+ 
           STATUS="${{ job.status }}"
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           
           if [ "$STATUS" = "success" ]; then
             COLOR="good"
             ICON=":white_check_mark:"
-            TEXTO="Todas las pruebas pasaron correctamente"
+            ESTADO_TEXTO="✅ EXITOSAS"
           else
             COLOR="danger"
             ICON=":x:"
-            TEXTO="Una o más pruebas fallaron — revisar evidencias"
+            ESTADO_TEXTO="❌ FALLIDAS"
           fi
  
-          # Crear el payload JSON en un archivo temporal
+          # Crear el payload JSON con los detalles
           cat > /tmp/slack_payload.json << 'EOF'
           {
             "attachments": [{
@@ -103,7 +121,14 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Estado:* STATUS_PLACEHOLDER\n*Suite:* SUITE_PLACEHOLDER\nTEXTO_PLACEHOLDER"
+                    "text": "*Estado:* ESTADO_TEXTO\n*Suite ejecutada:* SUITE_PLACEHOLDER\n*Total de pruebas:* TOTAL_PLACEHOLDER\n*Pasadas:* PASSED_PLACEHOLDER\n*Fallidas:* FAILED_PLACEHOLDER"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Pruebas ejecutadas:*\nTEST_NAMES_PLACEHOLDER"
                   }
                 },
                 {
@@ -113,7 +138,7 @@ jobs:
                       "type": "button",
                       "text": {
                         "type": "plain_text",
-                        "text": "Ver evidencias y video"
+                        "text": "Ver reporte detallado"
                       },
                       "url": "URL_PLACEHOLDER"
                     }
@@ -124,13 +149,19 @@ jobs:
           }
           EOF
  
-          # Reemplazar placeholders en el archivo
+          # Reemplazar placeholders
           sed -i "s|COLOR_PLACEHOLDER|${COLOR}|g" /tmp/slack_payload.json
           sed -i "s|ICON_PLACEHOLDER|${ICON}|g" /tmp/slack_payload.json
-          sed -i "s|STATUS_PLACEHOLDER|${STATUS}|g" /tmp/slack_payload.json
+          sed -i "s|ESTADO_TEXTO|${ESTADO_TEXTO}|g" /tmp/slack_payload.json
           sed -i "s|SUITE_PLACEHOLDER|${{ github.event.inputs.suite || 'smoke' }}|g" /tmp/slack_payload.json
-          sed -i "s|TEXTO_PLACEHOLDER|${TEXTO}|g" /tmp/slack_payload.json
+          sed -i "s|TOTAL_PLACEHOLDER|${TOTAL_TESTS}|g" /tmp/slack_payload.json
+          sed -i "s|PASSED_PLACEHOLDER|${PASSED}|g" /tmp/slack_payload.json
+          sed -i "s|FAILED_PLACEHOLDER|${FAILED}|g" /tmp/slack_payload.json
           sed -i "s|URL_PLACEHOLDER|${RUN_URL}|g" /tmp/slack_payload.json
+          
+          # Formatear nombres de pruebas para Slack
+          TEST_NAMES_FORMATTED=$(echo "$TEST_NAMES" | sed 's/^/• /')
+          sed -i "s|TEST_NAMES_PLACEHOLDER|${TEST_NAMES_FORMATTED}|g" /tmp/slack_payload.json
  
           # Enviar a Slack
           curl -X POST "$SLACK_WEBHOOK" \
