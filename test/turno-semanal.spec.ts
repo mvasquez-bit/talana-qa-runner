@@ -19,7 +19,7 @@ test.describe('Creación de Turno Semanal', () => {
     try {
       // PASO 1: Ir a Creación de turnos (YA ESTAMOS EN ASISTENCIA)
       console.log('\n[PASO 1] Navegando a Creación de turnos...');
-      await page.click('text=Creación de turnos');
+      await page.click('div:has-text("Creación de turnos")');
       await page.waitForLoadState('networkidle');
       console.log('✅ Página de Creación cargada');
 
