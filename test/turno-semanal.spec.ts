@@ -20,7 +20,7 @@ const TURNO_NAME = `prueba_automatizada_${Date.now()}`; // Genera nombre único 
 test.describe('Creación de Turno Semanal', () => {
   test.beforeEach(async ({ page }) => {
     // Login
-    await page.goto('https://talana.com/es/remuneraciones/login-vue#/');
+    await page.goto('https://talana.com/es/remuneraciones/login-vue?next=/es/remuneraciones/#/');
     await page.fill('input[placeholder*="usuario"]', process.env.TALANA_EMAIL!);
     await page.fill('input[type="password"]', process.env.TALANA_PASS!);
     await page.click('button:has-text("Ingresar")');
