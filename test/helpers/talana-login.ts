@@ -144,10 +144,16 @@ export async function iniciarSesion(page: any) {
     }
 
     console.log('\n✅✅✅ LOGIN COMPLETADO EXITOSAMENTE ✅✅✅\n');
+
+    // Navegar directamente al módulo de Asistencia
+    console.log('\n📍 Navegando al módulo de Asistencia...');
+    await page.goto('https://talana.com/es/asistencia/');
+    await page.waitForLoadState('networkidle');
+    console.log('✅ Módulo de Asistencia cargado');
     
   } catch (error: any) {
     console.error('\n❌ ERROR DURANTE EL LOGIN:');
-    console.error(`   ${error.message}`);
+    console.error(`   ${error.message || JSON.stringify(error)}`);
     throw error;
   }
 }
