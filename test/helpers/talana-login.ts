@@ -23,8 +23,11 @@ async function navegarConReintentos(page: any, url: string, maxIntentos: number 
         timeout: 60000
       });
       
-      console.log('✅ Conexión exitosa');
-      return true;
+      // Navegar directamente al módulo de Asistencia
+console.log('\n📍 Navegando al módulo de Asistencia...');
+await page.goto('https://talana.com/es/asistencia/');
+await page.waitForLoadState('networkidle');
+console.log('✅ Módulo de Asistencia cargado');
       
     } catch (error: any) {
       ultimoError = error;
