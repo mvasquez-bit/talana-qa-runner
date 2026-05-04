@@ -23,11 +23,8 @@ async function navegarConReintentos(page: any, url: string, maxIntentos: number 
         timeout: 60000
       });
       
-      // Navegar directamente al módulo de Asistencia
-console.log('\n📍 Navegando al módulo de Asistencia...');
-await page.goto('https://talana.com/es/asistencia/');
-await page.waitForLoadState('networkidle');
-console.log('✅ Módulo de Asistencia cargado');
+      console.log('✅ Conexión exitosa');
+      return true;
       
     } catch (error: any) {
       ultimoError = error;
@@ -58,7 +55,6 @@ export async function iniciarSesion(page: any) {
     console.log('📍 [PASO 2] Buscando campos de credenciales...');
     console.log('═══════════════════════════════════════════════════════');
     
-    // Campo usuario con selector correcto
     const campoUsuario = page.locator('[data-cy="talana-user-input"]');
     await campoUsuario.waitFor({ state: 'visible', timeout: 20000 });
     console.log('✅ Campo de usuario visible');
@@ -66,7 +62,6 @@ export async function iniciarSesion(page: any) {
     await campoUsuario.fill(USUARIO);
     console.log(`✍️  Usuario ingresado: ***`);
 
-    // Campo contraseña
     const campoPass = page.locator('input[type="password"]').first();
     await campoPass.waitFor({ state: 'visible', timeout: 15000 });
     await campoPass.fill(CLAVE);
@@ -146,14 +141,14 @@ export async function iniciarSesion(page: any) {
     console.log('\n✅✅✅ LOGIN COMPLETADO EXITOSAMENTE ✅✅✅\n');
 
     // Navegar directamente al módulo de Asistencia
-    console.log('\n📍 Navegando al módulo de Asistencia...');
+    console.log('📍 Navegando al módulo de Asistencia...');
     await page.goto('https://talana.com/es/asistencia/');
     await page.waitForLoadState('networkidle');
-    console.log('✅ Módulo de Asistencia cargado');
+    console.log('✅ Módulo de Asistencia cargado\n');
     
   } catch (error: any) {
     console.error('\n❌ ERROR DURANTE EL LOGIN:');
-    console.error(`   ${error.message || JSON.stringify(error)}`);
+    console.error(`   ${error?.message || JSON.stringify(error)}`);
     throw error;
   }
 }
