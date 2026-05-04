@@ -57,6 +57,8 @@ jobs:
         run: npx playwright test --reporter=html,json
         env:
           SUITE: ${{ github.event.inputs.suite || 'smoke' }}
+          TALANA_EMAIL: ${{ secrets.TALANA_EMAIL }}
+          TALANA_PASS: ${{ secrets.TALANA_PASS }}
  
       - name: Subir evidencias (videos, fotos, logs)
         if: always()
