@@ -25,9 +25,13 @@ test.describe('Creación de Turno Semanal', () => {
 
       // PASO 2: Crear turno Semanal
       console.log('\n[PASO 2] Seleccionando tipo Semanal...');
-      await page.click('div:has(div.lv-title:has-text("Semanal (Estándar)"))');
+
+      // Espera a que el elemento sea visible
+      await page.waitForSelector('.lv-title:has-text("Semanal (Estándar)")', { timeout: 30000 });
       await page.waitForLoadState('networkidle');
-      console.log('✅ Popup de creación abierto');
+
+      // Ahora sí, haz clic
+      await page.click('text=Semanal (Estándar)');
 
       // PASO 3: Ingresar nombre
       console.log('\n[PASO 3] Ingresando nombre del turno...');
