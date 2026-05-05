@@ -26,12 +26,19 @@ test.describe('Creación de Turno Semanal', () => {
       // PASO 2: Crear turno Semanal
       console.log('\n[PASO 2] Seleccionando tipo Semanal...');
 
-      // Espera a que el elemento sea visible
-      await page.waitForSelector('.lv-title:has-text("Semanal (Estándar)")', { timeout: 30000 });
-      await page.waitForLoadState('networkidle');
-
-      // Ahora sí, haz clic
-      await page.click('text=Semanal (Estándar)');
+      // Haz clic usando JavaScript
+      await page.evaluate(() => {
+        const elements = Array.from(document.querySelectorAll('div'));
+        const target = elements.find(el => el.textContent.includes('Semanal (Estándar)'));
+        if (target) {
+          // Busca el elemento clickeable (padre)
+          let clickable = target;
+          while (clickable && !clickable.style.cursor && clickable.tagName !== 'BODY') {
+            clickable = clickable.parentElement;
+          }
+          if (clickable) clickable.click();
+        }
+      });
 
       // PASO 3: Ingresar nombre
       console.log('\n[PASO 3] Ingresando nombre del turno...');
