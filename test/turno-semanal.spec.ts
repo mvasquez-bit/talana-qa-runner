@@ -42,7 +42,7 @@ test.describe('Creación de Turno Semanal', () => {
 
       // PASO 3: Ingresar nombre
       console.log('\n[PASO 3] Ingresando nombre del turno...');
-      await page.fill('input[placeholder="Nombre del turno"]', TURNO_NAME);
+      await page.fill('[data-cy="ayt-workshift-modal-workshift-name-input"]', TURNO_NAME);
       console.log(`✅ Nombre ingresado: ${TURNO_NAME}`);
 
       // PASO 4: Crear
