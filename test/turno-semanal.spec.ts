@@ -14,16 +14,35 @@ test.describe('Creación de Turno Semanal', () => {
 
     console.log('\n🚀 Iniciando creación de turno...');
 
-    // PASO 1: Navegación
-    await page.goto('https://talana.com/es/asistencia/turnos/');
-    // En lugar de networkidle (que es lento), esperamos a que el botón de añadir sea visible
-    await page.waitForSelector('text=Semanal (Estándar)');
-    console.log('✅ Página de Turnos cargada');
+    // PASO 1: Navegación con verificación de seguridad
+    console.log('\n[PASO 1] Navegando a Creación de turnos...');
+    await page.goto('https://talana.com/es/asistencia/turnos/', { waitUntil: 'load' });
+    
+    // Forzamos esperar a que la URL sea la correcta (evita redirecciones fallidas)
+    await page.waitForURL('**/asistencia/turnos/**');
+    console.log('✅ URL confirmada en módulo de Turnos');
 
     // PASO 2: Seleccionar tipo Semanal
-    // Optimizamos el selector: Buscamos el texto y forzamos el click en el elemento
     console.log('[PASO 2] Seleccionando tipo Semanal...');
-    await page.getByText('Semanal (Estándar)').click();
+    
+    // Usamos un selector más flexible (Regex) y esperamos que sea visible
+    const opcionSemanal = page.getByText(/Semanal \(Estándar\)/i);
+    
+    try {
+        // Esperamos máximo 15 seg solo para este elemento para no agotar el test
+        await opcionSemanal.waitFor({ state: 'visible', timeout: 15000 });
+        await opcionSemanal.click();
+    } catch (e) {
+        console.log('⚠️ No se vio el texto "Semanal", intentando buscar botón de "Añadir" primero...');
+        // A veces en Talana hay que hacer clic en un botón "+" o "Nuevo" antes de ver las opciones
+        const btnNuevo = page.locator('button:has-text("Nuevo"), button:has-text("Crear")').first();
+        if (await btnNuevo.isVisible()) {
+            await btnNuevo.click();
+            await opcionSemanal.click();
+        } else {
+            throw new Error("No se encontró la opción Semanal ni el botón para crear.");
+        }
+    }
 
     // PASO 3: Ingresar nombre (Corregido con tu nuevo selector)
     console.log('[PASO 3] Ingresando nombre...');
